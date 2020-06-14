@@ -24,71 +24,92 @@ mpl.rcParams['figure.figsize'] = [25, 10]
 
 # Number of individuals in the simulation. Used to generate a graph if none is passed.
 N = 10000
+
 # Properties of the connection graph. (2, 20, 0.2) makes top 0.1% = 15 * median.
 # Minimal degree of nodes in the generated graph.
 MIN_DEGREE = 2
+
 # Mean degree of nodes in the generated graph.
 MEAN_DEGREE = 20
+
 # Parameter of degree distribution in generated graph.
 # Higher gamma means a fatter tail of the degree distribution.
 GAMMA = 0.2
+
 # Number of simulation steps per one day of real life time.
-STEPS_PER_DAY = 5
+STEPS_PER_DAY =24# 5
+
 # Maximal number of steps in simulation. If this number is reached, simulation stops.
 MAX_STEPS = 3000
 # Number of individuals infected at t=0.
 INITIAL_INFECTED_NUM = 10
+
 # In a single interaction on a single day, what is the chance of an Infectious
 # to infect a Susceptible. Fitted to produce doubling_time=3.13 For G with parameters
 # (100000, 2, 20, 0.2). Though R0 might still be too small here: 2.0.
 PROB_INFECT = 0.022
+
 # Ratio of infectiousness between Exposed (in the final days before becoming
 # Infected) and Infected. In other words,
 # prob_infect_exposed = prob_infect * prob_infect_exposed_factor.
 # Set this to 0 to make the Exposed non-infectious.
 PROB_INFECT_EXPOSED_FACTOR = 0.5
+
 # How many days before developing symptoms (becoming Infected) an Exposed
 # individual is contagious. Questionable evidence, but 1-2 produces a reasonable R0.
 DURATION_EXPOSED_INFECTS = 2
+
 # Incubation period duration distribution mean. In days.
 # Source: 3rd Imperial College paper: https://www.imperial.ac.uk/media/imperial-college/medicine/sph/ide/gida-fellowships/Imperial-College-COVID19-Europe-estimates-and-NPI-impact-30-03-2020.pdf
 INCUBATION_DURATION_MEAN = 5.1
+
 # Incubation period duration distribution standard deviation. In days.
 # Source: 3rd Imperial College paper: https://www.imperial.ac.uk/media/imperial-college/medicine/sph/ide/gida-fellowships/Imperial-College-COVID19-Europe-estimates-and-NPI-impact-30-03-2020.pdf
 INCUBATION_DURATION_STD = 4.38
+
 # Probability to change from Infections to Recovered in a single day.
 # Equals the inverse of the expected time to Recover.
 # 3.5 = 0.3 * 0 + 0.56 * 5 + 0.1 * 5 + 0.04 * 5. Source: Pueyo spreadsheet: https://docs.google.com/spreadsheets/d/1uJHvBubps9Z2Iw_-a_xeEbr3-gci6c475t1_bBVkarc/edit#gid=0
 PROB_RECOVER = 1 / 3.5
+
 # Length of imposed quarantine, in days.
 DAYS_IN_QUARANTINE = 14
+
 # Probability that an Infected individual is tested and detected a carriers in a single day.
 # This encapsulates also the fact that many people are asymptomatic or will
 # not be tested (or are not quarantined).
 # Default: no tests at all.
 PROB_INFECTED_DETECTED = 0
+
 # Probability that a neighbor of an individual who tested positive is himself tested
 # and detected as a carrier. This encapsulates the probability that they are traced
 # as well. The testing of neighbors happens once, once the original individual
 # is tested positive, so this is *not* a probability per day.
 # Default - no neighbors are tested or detected.
 PROB_NEIGHBOR_DETECTED = 0
+
 # Share of the general population which is tested on a single day. Exposed and
 # Infected individuals who are tested are detected as carriers.
 # Default - previous behavior, no exposed are detected.
 PROB_EXPOSED_DETECTED = 0
+
 # When an individual tests positive, whether their neighbors are quarantined as well.
 QUARANTINE_NEIGHBORS = False
 _EPSILON = 1e-10
+
 # USA deaths data (worldometers.info): 11 -> 2220 from March 4th to March 28th.
 DOUBLING_DAYS = float((28 - 4) / np.log2(2220 / 11))  # About 3.13
+
 # Names of columns in SimulationResults DataFrame.
 MAIN_GROUPS = ['susceptible', 'exposed', 'recovered', 'infected', 'quarantined']
+
 # Column list out of the columns in the SimulationResults DataFrame.
 ALL_COLUMNS = MAIN_GROUPS + ['test_rate']
+
 # Plotting color conventions.
 GROUP2COLOR = dict(susceptible='blue', exposed='orange', recovered='green',
                    quarantined='purple', infected='red', test_rate='brown')
+
 # Attributes to print in SimulationResults summary.
 SUMMARY_ATTRS = ['duration', 'fraction_infected', 'doubling_days', 'fraction_quarantine_time', 'peak_infected_time', 'peak_fraction_infected', 'fraction_tests', 'peak_test_rate']
 
@@ -226,6 +247,8 @@ class SimulationResults(object):
       ax_arr[1].set_title('log scale')
     else:
       fig, ax_arr = plt.subplots(1, 2)
+    ax_arr[0].set_title('Linear Scale')
+    ax_arr[1].set_title('Log Scale')
     fig.suptitle(title, fontsize=18)
     results_to_plot = self.df.drop('step', axis=1).set_index('day') / scale
     results_to_plot = results_to_plot[columns]
@@ -248,6 +271,9 @@ class SimulationResults(object):
     if plot:
       self.plot_trends(hyperparams=hyperparams, G_attrs=G_attrs, **plot_kwargs)
 
+###########################################
+# End of SimulationResults Class Definition
+###########################################
 
 def get_gamma_distribution_params(mean, std):
   """Turn mean and std of Gamma distribution into parameters k and theta."""
@@ -566,7 +592,11 @@ def testing_step(E_arr, I_arr, TP_arr,
   # Random subset of entire population tested, carriers (Exposed or Infected)
   # detected with some probability.
   carrier_arr = E_arr | I_arr
-  new_TP_arr |= random_subset(carrier_arr & (1 - TP_arr), prob_exposed_detected)
+
+
+  new_TP_arr |= random_subset(carrier_arr & (1 - TP_arr), prob_exposed_detected)  #INSERT NEW TESTING STRATEGY AT THIS LINE; RIGHT NOW IS COMPLETELY RANDOM TESTING
+    
+    
   N = len(E_arr)
   # N, since entire population was tested, other than known positives.
   # Assumes 0 negatives (false & true). Divide by P(test=positive) for more realistic estimate.
@@ -719,24 +749,47 @@ def simulation(N=N,
     verbose: Whether to print some progress indicators.
   """
   # Process input.
+    
+  #################
+  #Graph Generation
+  #################
+
   if G is None:
     if verbose:
       print('Generating graph...')
     G = generate_scale_free_graph(N, min_degree=min_degree, mean_degree=mean_degree, gamma=gamma)
     if verbose:
       print('Done!')
+  elif type(G)==list:
+    N=G[0].number_of_nodes()
   else:
     N = G.number_of_nodes()
-  adj_mat = nx.adjacency_matrix(G)
+  
+  if type(G)==list:
+    #put actions heres
+    adj_mat = [nx.adjacency_matrix(x) for x in G]
+      
+  else:
+    # We'll need to turn the below into a list with multiple graphs if we wish to add time dependance  
+    adj_mat = nx.adjacency_matrix(G)
+
 
   initial_infected_num = int(initial_infected_num)  # Make sure it's an integer.
+        
+    
   incubation_k, incubation_theta = get_gamma_distribution_params(incubation_duration_mean, incubation_duration_std)
 
+  ###########################
+  # Model Initialization Here
+  ###########################
   S_arr, E_arr, E_left, I_arr, R_arr, Q_arr, Q_left, TP_arr = init_states(
       N, initial_infected_num=initial_infected_num, incubation_duration_mean=incubation_duration_mean,
       incubation_duration_std=incubation_duration_std, prob_recover=prob_recover)
+    
   n_infected_tested = n_neighbors_tested = n_general_tested = 0
   # Step-wise probabilities.
+    
+    
   prob_infect_per_step = prob_infect / steps_per_day
   prob_infected_detected_per_step = prob_infected_detected / steps_per_day
   prob_exposed_detected_per_step = prob_exposed_detected / steps_per_day
@@ -752,11 +805,26 @@ def simulation(N=N,
   # Main loop.
   for step_num in range(max_steps):
     # Save metrics.
+    if verbose:
+      print('Time: ',step_num/steps_per_day,' Days')
+    if type(G)==list:
+      graph_idx = int(24*(step_num/steps_per_day))//4 % len(G) #assuming 4 hour periods
+      if verbose:    
+        print("Graph_idx: ",graph_idx)
+    
     counters.append(create_counter(I_arr, E_arr, R_arr, Q_arr, S_arr,
                                    n_infected_tested, n_neighbors_tested, n_general_tested))
 
     # Infection step. S -> E
-    S_arr, E_arr = infection_step(S_arr, E_arr, E_left, I_arr, Q_arr, adj_mat,
+    if type(G)==list:
+      S_arr, E_arr = infection_step(S_arr, E_arr, E_left, I_arr, Q_arr, adj_mat[graph_idx],
+                                  incubation_k=incubation_k,
+                                  incubation_theta=incubation_theta,
+                                  prob_infect=prob_infect_per_step,
+                                  prob_infect_exposed_factor=prob_infect_exposed_factor,
+                                  duration_exposed_infects=duration_exposed_infects)
+    else:
+      S_arr, E_arr = infection_step(S_arr, E_arr, E_left, I_arr, Q_arr, adj_mat,
                                   incubation_k=incubation_k,
                                   incubation_theta=incubation_theta,
                                   prob_infect=prob_infect_per_step,
@@ -768,7 +836,15 @@ def simulation(N=N,
                                            steps_per_day=steps_per_day)
 
     # Testing step. Update tested_positive.
-    TP_arr, n_infected_tested, n_neighbors_tested, n_general_tested = testing_step(
+    if type(G)==list:
+      TP_arr, n_infected_tested, n_neighbors_tested, n_general_tested = testing_step(
+        E_arr, I_arr, TP_arr,
+        prob_infected_detected=prob_infected_detected_per_step,
+        prob_neighbor_detected=prob_neighbor_detected,
+        prob_exposed_detected=prob_exposed_detected_per_step,
+        adj_mat=adj_mat[graph_idx])
+    else:
+      TP_arr, n_infected_tested, n_neighbors_tested, n_general_tested = testing_step(
         E_arr, I_arr, TP_arr,
         prob_infected_detected=prob_infected_detected_per_step,
         prob_neighbor_detected=prob_neighbor_detected,
@@ -776,7 +852,14 @@ def simulation(N=N,
         adj_mat=adj_mat)
 
     # Quarantine step. Update Q
-    Q_arr, Q_left = quarantine_step(
+    if type(G)==list:
+      Q_arr, Q_left = quarantine_step(
+        E_arr, I_arr, Q_arr, Q_left, R_arr, TP_arr, adj_mat[graph_idx],
+        quarantine_neighbors=quarantine_neighbors,
+        days_in_quarantine=days_in_quarantine,
+        steps_per_day=steps_per_day)
+    else:
+      Q_arr, Q_left = quarantine_step(
         E_arr, I_arr, Q_arr, Q_left, R_arr, TP_arr, adj_mat,
         quarantine_neighbors=quarantine_neighbors,
         days_in_quarantine=days_in_quarantine,
@@ -802,7 +885,16 @@ def simulation(N=N,
   results_df['test_rate'] = np.convolve(tested, np.ones((steps_per_day,)), mode='same')
   results_df['step'] = np.arange(len(results_df))
   results_df['day'] = results_df['step'] / steps_per_day
-  results = SimulationResults(results_df, G, prob_infect=prob_infect,
+
+  if type(G)==list:
+    results = SimulationResults(results_df, G[0], prob_infect=prob_infect,
+                              prob_infected_detected=prob_infected_detected,
+                              prob_neighbor_detected=prob_neighbor_detected,
+                              prob_exposed_detected=prob_exposed_detected,
+                              quarantine_neighbors=quarantine_neighbors,
+                              steps_per_day=steps_per_day)
+  else:
+    results = SimulationResults(results_df, G, prob_infect=prob_infect,
                               prob_infected_detected=prob_infected_detected,
                               prob_neighbor_detected=prob_neighbor_detected,
                               prob_exposed_detected=prob_exposed_detected,
