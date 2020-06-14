@@ -595,7 +595,7 @@ def testing_step(E_arr, I_arr, TP_arr,
 
 
   new_TP_arr |= random_subset(carrier_arr & (1 - TP_arr), prob_exposed_detected)  #INSERT NEW TESTING STRATEGY AT THIS LINE; RIGHT NOW IS COMPLETELY RANDOM TESTING
-    
+  # 1-TP_arr are the people who have yet to test positive; we don't retest positive people.
     
   N = len(E_arr)
   # N, since entire population was tested, other than known positives.
@@ -643,7 +643,7 @@ def quarantine_step(E_arr, I_arr, Q_arr, Q_left, R_arr, TP_arr, adj_mat=None,
   Q_left -= 1 / steps_per_day  # Decrease time left in Quarantine.
   # Known positives who haven't recovered.
   known_positives = TP_arr & (1 - R_arr)
-  known_recovered = TP_arr & R_arr
+  known_recovered = TP_arr & R_arr  #recovered or dead
   # Release those whose Quarantine time is up.
   exit_quarantine = Q_arr & (Q_left < _EPSILON)
   # Don't release known positives who haven't recovered.
@@ -805,11 +805,11 @@ def simulation(N=N,
   # Main loop.
   for step_num in range(max_steps):
     # Save metrics.
-    if verbose:
-      print('Time: ',step_num/steps_per_day,' Days')
     if type(G)==list:
       graph_idx = int(24*(step_num/steps_per_day))//4 % len(G) #assuming 4 hour periods
-      if verbose:    
+    if verbose:
+      print('Time: ',step_num/steps_per_day,' Days')
+      if type(G)==list:
         print("Graph_idx: ",graph_idx)
     
     counters.append(create_counter(I_arr, E_arr, R_arr, Q_arr, S_arr,
