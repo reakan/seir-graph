@@ -10,7 +10,7 @@ Visualization code has been re-vamped. Now all SEIRD groups are visible and plot
 
 Below is a simulation showing the effects of closing down Chandler.
 
-![Chandler Shutdown](200628_long.gif)
+![Chandler Shutdown](200628.gif)
 
 In addition to this, Testing/Quarantine/State Forecasting have all been implemented. Below is a simulation showing the differences in outcome between a campus that tests/quarantines everyone vs a campus that tests/quarantines nobody.
 
